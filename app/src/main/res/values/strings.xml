@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">Login Android</string>
+
+    <string name="hint_email">Correo</string>
+    <string name="hint_password">Contraseña</string>
+    <string name="hint_name">Nombre</string>
+    <string name="btn_login">INGRESAR</string>
+    <string name="btn_register">REGISTRAR</string>
+    <string name="btn_link_to_register">No eres miembro? regístrate ahora.</string>
+    <string name="btn_link_to_login">Ya estas registrado? Ingresa.</string>
+    <string name="welcome">Bienvenido</string>
+    <string name="btn_logout">Salir</string>
+    <string name="name">Nombre</string>
+</resources>
