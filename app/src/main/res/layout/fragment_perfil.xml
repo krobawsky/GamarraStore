@@ -1,0 +1,55 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="layout.PerfilFragment"
+    android:padding="16dp">
+
+    <!-- TODO: Update blank fragment layout -->
+
+    <!-- Imagen de perfil -->
+    <de.hdodenhof.circleimageview.CircleImageView
+        android:id="@+id/imageView"
+        android:layout_width="140dp"
+        android:layout_height="140dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/img_perfil"
+        android:layout_gravity="center"
+        android:layout_marginBottom="90dp"/>
+
+    <!-- Nombre de Usuario -->
+    <TextView
+        android:id="@+id/name"
+        android:textColor="@color/bg_main"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textStyle="bold"
+        android:textSize="20dp"
+        tools:text="Nombre del usuario"
+        android:layout_gravity="center"
+        android:layout_marginTop="10dp"/>
+
+    <!-- Correo de la cuenta -->
+    <TextView
+        android:id="@+id/email"
+        android:textColor="@color/bg_main"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="18dp"
+        tools:text="correo@android.com"
+        android:layout_gravity="center"
+        android:layout_marginTop="40dp"/>
+
+    <!-- Dni de la cuenta -->
+    <TextView
+        android:id="@+id/dni"
+        android:textColor="@color/bg_main"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textSize="18dp"
+        tools:text="dni"
+        android:layout_gravity="center"
+        android:layout_marginTop="70dp"/>
+
+</FrameLayout>

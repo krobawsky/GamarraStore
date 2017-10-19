@@ -40,7 +40,8 @@ import tecsup.integrador.loginandroid.app.AppController;
 import tecsup.integrador.loginandroid.helper.SQLiteHandler;
 import tecsup.integrador.loginandroid.helper.SessionManager;
 
-public class LoginActivity extends AppCompatActivity implements GoogleApiClient.OnConnectionFailedListener {
+public class LoginActivity extends AppCompatActivity {
+
     private static final String TAG = RegisterActivity.class.getSimpleName();
     private Button btnLogin;
     private Button btnLinkToRegister;
@@ -50,9 +51,11 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
     private SessionManager session;
     private SQLiteHandler db;
 
+    /*
     private GoogleApiClient googleApiClient;
     private SignInButton signInButton;
     public static final int SIGN_IN_CODE = 9001;
+    */
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -114,6 +117,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
             }
         });
 
+        /*
         //Google
         GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                 .requestEmail()
@@ -137,6 +141,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
                 startActivityForResult(intent, SIGN_IN_CODE);
             }
         });
+        */
 
     }
 
@@ -173,12 +178,13 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
 
                         JSONObject user = jObj.getJSONObject("user");
                         String name = user.getString("name");
+                        String dni = user.getString("dni");
                         String email = user.getString("email");
                         String created_at = user
                                 .getString("created_at");
 
                         // Inserting row in users table
-                        db.addUser(name, email, uid, created_at);
+                        db.addUser(name, dni, email, uid, created_at);
 
                         // Launch main activity
                         Intent intent = new Intent(LoginActivity.this,
@@ -225,6 +231,8 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
         AppController.getInstance().addToRequestQueue(strReq, tag_string_req);
     }
 
+
+
     private void showDialog() {
         if (!pDialog.isShowing())
             pDialog.show();
@@ -235,6 +243,7 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
             pDialog.dismiss();
     }
 
+    /*
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
 
@@ -253,17 +262,16 @@ public class LoginActivity extends AppCompatActivity implements GoogleApiClient.
     private void handleSignInResult(GoogleSignInResult result) {
         if (result.isSuccess()) {
             goMainScreen();
-        } else {
-            Toast.makeText(this, "No se pudo iniciar sesión.", Toast.LENGTH_SHORT).show();
         }
     }
 
     private void goMainScreen() {
-
+        session.setLogin(true);
         // Launch main activity
         Intent intent = new Intent(LoginActivity.this, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
         finish();
     }
+    */
 }

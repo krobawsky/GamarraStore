@@ -29,6 +29,8 @@ dependencies {
     compile 'com.android.support:design:26.+'
     compile 'com.mcxiaoke.volley:library-aar:1.0.0'
     compile 'com.google.android.gms:play-services-auth:9.8.0'
+    compile 'de.hdodenhof:circleimageview:2.2.0'
+    compile 'com.android.support:support-v4:26.+'
     testCompile 'junit:junit:4.12'
 }
 apply plugin: 'com.google.gms.google-services'

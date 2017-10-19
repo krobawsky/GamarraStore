@@ -29,6 +29,20 @@
             android:textColorHint="@color/input_login_hint" />
 
         <EditText
+            android:id="@+id/dni"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:background="@color/input_register_bg"
+            android:hint="@string/hint_dni"
+            android:maxLength="8"
+            android:padding="10dp"
+            android:singleLine="true"
+            android:inputType="number"
+            android:textColor="@color/bg_login"
+            android:textColorHint="@color/input_login_hint" />
+
+        <EditText
             android:id="@+id/email"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
@@ -48,6 +62,19 @@
             android:layout_marginBottom="10dp"
             android:background="@color/input_register_bg"
             android:hint="@string/hint_password"
+            android:inputType="textPassword"
+            android:padding="10dp"
+            android:singleLine="true"
+            android:textColor="@color/bg_login"
+            android:textColorHint="@color/input_login_hint" />
+
+        <EditText
+            android:id="@+id/password2"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:background="@color/input_register_bg"
+            android:hint="@string/hint_password_confirm"
             android:inputType="textPassword"
             android:padding="10dp"
             android:singleLine="true"

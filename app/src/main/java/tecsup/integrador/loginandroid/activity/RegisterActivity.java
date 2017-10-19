@@ -37,8 +37,9 @@ public class RegisterActivity extends Activity {
     private Button btnRegister;
     private Button btnLinkToLogin;
     private EditText inputFullName;
+    private EditText inputDNI;
     private EditText inputEmail;
-    private EditText inputPassword;
+    private EditText inputPassword, inputPassword2;
     private ProgressDialog pDialog;
     private SessionManager session;
     private SQLiteHandler db;
@@ -49,8 +50,10 @@ public class RegisterActivity extends Activity {
         setContentView(R.layout.activity_register);
 
         inputFullName = (EditText) findViewById(R.id.name);
+        inputDNI = (EditText) findViewById(R.id.dni);
         inputEmail = (EditText) findViewById(R.id.email);
         inputPassword = (EditText) findViewById(R.id.password);
+        inputPassword2 = (EditText) findViewById(R.id.password2);
         btnRegister = (Button) findViewById(R.id.btnRegister);
         btnLinkToLogin = (Button) findViewById(R.id.btnLinkToLoginScreen);
 
@@ -77,11 +80,31 @@ public class RegisterActivity extends Activity {
         btnRegister.setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) {
                 String name = inputFullName.getText().toString().trim();
+                String dni = inputDNI.getText().toString().trim();
                 String email = inputEmail.getText().toString().trim();
                 String password = inputPassword.getText().toString().trim();
+                String password2 = inputPassword2.getText().toString().trim();
 
-                if (!name.isEmpty() && !email.isEmpty() && !password.isEmpty()) {
-                    registerUser(name, email, password);
+
+                if (!name.isEmpty() && !dni.isEmpty() && !email.isEmpty() && !password.isEmpty() && !password2.isEmpty()) {
+
+                    if( dni.length() == 8 ){
+
+                        if ( password.equalsIgnoreCase(password2) ){
+                            registerUser(name, dni, email, password);
+
+                        }else{
+                            Toast.makeText(getApplicationContext(),
+                                    "Contraseñas diferentes!", Toast.LENGTH_LONG)
+                                    .show();
+                        }
+
+                    }else {
+                        Toast.makeText(getApplicationContext(),
+                                "DNI erróneo!", Toast.LENGTH_LONG)
+                                .show();
+                    }
+
                 } else {
                     Toast.makeText(getApplicationContext(),
                             "Por favor complete todos los campos!", Toast.LENGTH_LONG)
@@ -107,7 +130,7 @@ public class RegisterActivity extends Activity {
      * Function to store user in MySQL database will post params(tag, name,
      * email, password) to register url
      * */
-    private void registerUser(final String name, final String email,
+    private void registerUser(final String name, final String dni, final String email,
                               final String password) {
         // Tag used to cancel the request
         String tag_string_req = "req_register";
@@ -133,14 +156,15 @@ public class RegisterActivity extends Activity {
 
                         JSONObject user = jObj.getJSONObject("user");
                         String name = user.getString("name");
+                        String dni = user.getString("dni");
                         String email = user.getString("email");
                         String created_at = user
                                 .getString("created_at");
 
                         // Inserting row in users table
-                        db.addUser(name, email, uid, created_at);
+                        db.addUser(name, dni, email, uid, created_at);
 
-                        Toast.makeText(getApplicationContext(), "User successfully registered. Try login now!", Toast.LENGTH_LONG).show();
+                        Toast.makeText(getApplicationContext(), "Usuario registrado. Intente ingresar!", Toast.LENGTH_LONG).show();
 
                         // Launch login activity
                         Intent intent = new Intent(
@@ -177,6 +201,7 @@ public class RegisterActivity extends Activity {
                 // Posting params to register url
                 Map<String, String> params = new HashMap<String, String>();
                 params.put("name", name);
+                params.put("dni", dni);
                 params.put("email", email);
                 params.put("password", password);
 
