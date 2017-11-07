@@ -1,6 +1,8 @@
 package tecsup.integrador.loginandroid.activity;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.BottomNavigationView;
 import android.support.design.widget.NavigationView;
@@ -11,34 +13,42 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import com.google.android.gms.common.api.GoogleApiClient;
+import java.util.List;
 
-import java.util.HashMap;
-
+import layout.ExplorarFragment;
+import layout.MapFragment;
 import layout.PerfilFragment;
+import layout.ProductoFragment;
+import layout.StoreFragment;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 import tecsup.integrador.loginandroid.R;
-import tecsup.integrador.loginandroid.helper.SQLiteHandler;
-import tecsup.integrador.loginandroid.helper.SessionManager;
+import tecsup.integrador.loginandroid.models.Usuario;
+import tecsup.integrador.loginandroid.service.ApiService;
+import tecsup.integrador.loginandroid.service.ApiServiceGenerator;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private TextView txtName;
     private TextView txtEmail;
 
-    private String name;
+    private String id;
+    private String nombre;
     private String email;
     private String dni;
 
-    private SQLiteHandler db;
-    private SessionManager session;
+    // SharedPreferences
+    private SharedPreferences sharedPreferences;
 
-    private GoogleApiClient googleApiClient;
+    private static final String TAG = MainActivity.class.getSimpleName();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,38 +67,77 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        // SqLite database handler
-        db = new SQLiteHandler(getApplicationContext());
+        BottomNavigationView navigation = (BottomNavigationView) findViewById(R.id.navigation);
+        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener);
 
-        // session manager
-        session = new SessionManager(getApplicationContext());
-
-        // Extraemos los datos del usuario desde SQLite
-        HashMap<String, String> user = db.getUserDetails();
-
-        name = user.get("name");
-        email = user.get("email");
-        dni = user.get("uid");
-
-        //con esto generamos el usuario en el header del menu-------------------------------
+        //con esto agregamos datos en el header del menu-------------------------------
         View hView = navigationView.getHeaderView(0);
         txtName = (TextView) hView.findViewById(R.id.name);
         txtEmail = (TextView) hView.findViewById(R.id.email);
 
-        txtName.setText(name);
-        txtEmail.setText(email);
+        // init SharedPreferences
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
-        /*
-        //Google
-        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestEmail()
-                .build();
+        // get id from SharedPreferences
+        id = sharedPreferences.getString("id", null);
+        Log.d(TAG, "comerciante_id: " + id);
 
-        googleApiClient = new GoogleApiClient.Builder(this)
-                .enableAutoManage(this, this)
-                .addApi(Auth.GOOGLE_SIGN_IN_API, gso)
-                .build();
-        */
+        final ApiService service = ApiServiceGenerator.createService(ApiService.class);
+
+        Call<List<Usuario>> call = service.getUsuarios();
+
+        call.enqueue(new Callback<List<Usuario>>() {
+            @Override
+            public void onResponse(Call<List<Usuario>> call, Response<List<Usuario>> response) {
+                try {
+
+                    int statusCode = response.code();
+                    Log.d(TAG, "HTTP status code: " + statusCode);
+
+                    if (response.isSuccessful()) {
+
+                        List<Usuario> usuarios = response.body();
+                        Log.d(TAG, "usuarios: " + usuarios);
+
+                        for (Usuario usuario : usuarios) {
+
+                            if (String.valueOf(usuario.getId()).equalsIgnoreCase(id)) {
+
+                                nombre = usuario.getNombre();
+                                email = usuario.getEmail();
+                                dni = usuario.getDni();
+
+                                txtName.setText(nombre);
+                                txtEmail.setText(email);
+
+                            } else {
+
+                                Toast.makeText(getApplicationContext(), "Usuario no encontrado.", Toast.LENGTH_SHORT);
+                            }
+                        }
+
+                    } else {
+                        Log.e(TAG, "onError: " + response.errorBody().string());
+                        throw new Exception("Error en el servicio");
+                    }
+
+                } catch (Throwable t) {
+                    try {
+                        Log.e(TAG, "onThrowable: " + t.toString(), t);
+                        Toast.makeText(MainActivity.this, t.getMessage(), Toast.LENGTH_LONG).show();
+                    }catch (Throwable x){}
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<Usuario>> call, Throwable t) {
+                Log.e(TAG, "onFailure: " + t.toString());
+                Toast.makeText(MainActivity.this, t.getMessage(), Toast.LENGTH_LONG).show();
+            }
+
+        });
+
+
     }
 
     /**
@@ -96,14 +145,19 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
      * preferences Clears the user data from sqlite users table
      * */
     private void logoutUser() {
-        session.setLogin(false);
 
-        db.deleteUsers();
+        // remove from SharedPreferences
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        boolean success = editor.putBoolean("islogged", false).commit();
+        boolean success2 = editor
+                .putString("tienda_id", "")
+                .commit();
 
         // Launching the login activity
         Intent intent = new Intent(MainActivity.this, LoginActivity.class);
         startActivity(intent);
         finish();
+
     }
 
     @Override
@@ -127,29 +181,40 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public boolean onNavigationItemSelected(MenuItem item) {
         // Handle navigation view item clicks here.
         int id = item.getItemId();
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
 
-        if (id == R.id.nav_camera) {
-            // Handle the camera action
-        } else if (id == R.id.nav_gallery) {
+        if (id == R.id.navigation_store) {
+            StoreFragment fragment = new StoreFragment();
+            transaction.replace(R.id.content, fragment);
+            transaction.commit();
 
-        } else if (id == R.id.nav_slideshow) {
+        } else if (id == R.id.navigation_productos) {
+            ProductoFragment fragment = new ProductoFragment();
+            transaction.replace(R.id.content, fragment);
+            transaction.commit();
 
-        } else if (id == R.id.nav_manage) {
+        } else if (id == R.id.navigation_map) {
+            MapFragment fragment = new MapFragment();
+            transaction.replace(R.id.content, fragment);
+            transaction.commit();
+
+        } else if (id == R.id.navigation_explorar) {
+            ExplorarFragment fragment = new ExplorarFragment();
+            transaction.replace(R.id.content, fragment);
+            transaction.commit();
 
         } else if (id == R.id.nav_perfil) {
-            PerfilFragment perfilFragment = new PerfilFragment();
-            FragmentTransaction transaction4 = getSupportFragmentManager().beginTransaction();
-            transaction4.replace(R.id.content, perfilFragment);
+            PerfilFragment fragment = new PerfilFragment();
+            transaction.replace(R.id.content, fragment);
 
             Bundle args = new Bundle();
-            args.putString("name", name);
+            args.putString("name", nombre);
             args.putString("email", email);
             args.putString("dni", dni);
-            perfilFragment.setArguments(args);
+            fragment.setArguments(args);
+            transaction.commit();
 
-            transaction4.commit();
         } else if (id == R.id.nav_logut) {
-            session.setLogin(false);
             logoutUser();
         }
 
@@ -163,15 +228,35 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         @Override
         public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+
             switch (item.getItemId()) {
 
-                case R.id.navigation_search:
+                case R.id.navigation_store:
+                    StoreFragment fragment1 = new StoreFragment();
+                    FragmentTransaction transaction1 = getSupportFragmentManager().beginTransaction();
+                    transaction1.replace(R.id.content, fragment1);
+                    transaction1.commit();
+
+                    return true;
+                case R.id.navigation_productos:
+                    ProductoFragment fragment2 = new ProductoFragment();
+                    FragmentTransaction transaction2 = getSupportFragmentManager().beginTransaction();
+                    transaction2.replace(R.id.content, fragment2);
+                    transaction2.commit();
 
                     return true;
                 case R.id.navigation_map:
+                    MapFragment fragment3 = new MapFragment();
+                    FragmentTransaction transaction3 = getSupportFragmentManager().beginTransaction();
+                    transaction3.replace(R.id.content, fragment3);
+                    transaction3.commit();
 
                     return true;
-                case R.id.navigation_store:
+                case R.id.navigation_explorar:
+                    ExplorarFragment fragment4 = new ExplorarFragment();
+                    FragmentTransaction transaction4 = getSupportFragmentManager().beginTransaction();
+                    transaction4.replace(R.id.content, fragment4);
+                    transaction4.commit();
 
                     return true;
             }
@@ -179,74 +264,4 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
 
     };
-
-    /*
-    //<------------------------------ Google -------------------------------------->//
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        OptionalPendingResult<GoogleSignInResult> opr = Auth.GoogleSignInApi.silentSignIn(googleApiClient);
-        if (opr.isDone()) {
-            GoogleSignInResult result = opr.get();
-            handleSignInResult(result);
-        } else {
-            opr.setResultCallback(new ResultCallback<GoogleSignInResult>() {
-                @Override
-                public void onResult(@NonNull GoogleSignInResult googleSignInResult) {
-                    handleSignInResult(googleSignInResult);
-                }
-            });
-        }
-    }
-
-    private void handleSignInResult(GoogleSignInResult result) {
-        if (result.isSuccess()) {
-
-            GoogleSignInAccount account = result.getSignInAccount();
-
-            txtName.setText(account.getDisplayName());
-            txtEmail.setText(account.getEmail());
-
-        }
-    }
-
-    private void goLogInScreen() {
-        Intent intent = new Intent(this, LoginActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(intent);
-    }
-
-    public void logOut(View view) {
-        Auth.GoogleSignInApi.signOut(googleApiClient).setResultCallback(new ResultCallback<Status>() {
-            @Override
-            public void onResult(@NonNull Status status) {
-                if (status.isSuccess()) {
-                    goLogInScreen();
-                } else {
-                    Toast.makeText(getApplicationContext(), "No se pudo cerrar sesión.", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
-    }
-
-    public void revoke(View view) {
-        Auth.GoogleSignInApi.revokeAccess(googleApiClient).setResultCallback(new ResultCallback<Status>() {
-            @Override
-            public void onResult(@NonNull Status status) {
-                if (status.isSuccess()) {
-                    goLogInScreen();
-                } else {
-                    Toast.makeText(getApplicationContext(), "No se pudo revokar sesión.", Toast.LENGTH_SHORT).show();
-                }
-            }
-        });
-    }
-
-    @Override
-    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-
-    }
-    */
 }

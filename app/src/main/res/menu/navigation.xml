@@ -2,18 +2,23 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
-        android:id="@+id/navigation_search"
-        android:icon="@drawable/ic_menu_camera"
-        android:title="@string/action_settings" />
+        android:id="@+id/navigation_store"
+        android:icon="@drawable/ic_store"
+        android:title="@string/nav_tienda" />
+
+    <item
+        android:id="@+id/navigation_productos"
+        android:icon="@drawable/ic_t_shirt"
+        android:title="@string/nav_productos" />
 
     <item
         android:id="@+id/navigation_map"
-        android:icon="@drawable/ic_menu_camera"
-        android:title="@string/action_settings" />
+        android:icon="@drawable/ic_map"
+        android:title="@string/nav_mapa" />
 
     <item
-        android:id="@+id/navigation_store"
-        android:icon="@drawable/ic_menu_camera"
-        android:title="@string/action_settings" />
+        android:id="@+id/navigation_explorar"
+        android:icon="@drawable/ic_search"
+        android:title="@string/nav_explorar" />
 
 </menu>

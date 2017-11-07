@@ -5,11 +5,11 @@
  */
 package tecsup.integrador.loginandroid.activity;
 
-import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
@@ -17,45 +17,33 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import com.android.volley.Request.Method;
-import com.android.volley.Response;
-import com.android.volley.VolleyError;
-import com.android.volley.toolbox.StringRequest;
-import com.google.android.gms.auth.api.Auth;
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions;
-import com.google.android.gms.auth.api.signin.GoogleSignInResult;
-import com.google.android.gms.common.ConnectionResult;
-import com.google.android.gms.common.SignInButton;
-import com.google.android.gms.common.api.GoogleApiClient;
+import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.List;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.HashMap;
-import java.util.Map;
-
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 import tecsup.integrador.loginandroid.R;
-import tecsup.integrador.loginandroid.app.AppConfig;
-import tecsup.integrador.loginandroid.app.AppController;
-import tecsup.integrador.loginandroid.helper.SQLiteHandler;
-import tecsup.integrador.loginandroid.helper.SessionManager;
+import tecsup.integrador.loginandroid.models.Usuario;
+import tecsup.integrador.loginandroid.service.ApiService;
+import tecsup.integrador.loginandroid.service.ApiServiceGenerator;
 
 public class LoginActivity extends AppCompatActivity {
 
-    private static final String TAG = RegisterActivity.class.getSimpleName();
+    private static final String TAG = UserRegisterActivity.class.getSimpleName();
+
     private Button btnLogin;
     private Button btnLinkToRegister;
+
     private EditText inputEmail;
     private EditText inputPassword;
-    private ProgressDialog pDialog;
-    private SessionManager session;
-    private SQLiteHandler db;
 
-    /*
-    private GoogleApiClient googleApiClient;
-    private SignInButton signInButton;
-    public static final int SIGN_IN_CODE = 9001;
-    */
+    private ProgressDialog pDialog;
+
+    private SharedPreferences sharedPreferences;
+
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -71,18 +59,20 @@ public class LoginActivity extends AppCompatActivity {
         pDialog = new ProgressDialog(this);
         pDialog.setCancelable(false);
 
-        // SQLite database handler
-        db = new SQLiteHandler(getApplicationContext());
+        // init SharedPreferences
+        sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
-        // Session manager
-        session = new SessionManager(getApplicationContext());
+        // username remember
+        String username = sharedPreferences.getString("username", null);
+        if(username != null){
+            inputEmail.setText(username);
+            inputPassword.requestFocus();
+        }
 
-        // Check if user is already logged in or not
-        if (session.isLoggedIn()) {
-            // User is already logged in. Take him to main activity
-            Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-            startActivity(intent);
-            finish();
+        // islogged remember
+        if(sharedPreferences.getBoolean("islogged", false)){
+            // Go to Dashboard
+            goDashboard();
         }
 
         // Login button Click Event
@@ -95,7 +85,11 @@ public class LoginActivity extends AppCompatActivity {
                 // Check for empty data in the form
                 if (!email.isEmpty() && !password.isEmpty()) {
                     // login user
+                    pDialog.setMessage("Ingresando ...");
+                    showDialog();
+
                     checkLogin(email, password);
+
                 } else {
                     // Prompt user to enter credentials
                     Toast.makeText(getApplicationContext(),
@@ -111,37 +105,11 @@ public class LoginActivity extends AppCompatActivity {
 
             public void onClick(View view) {
                 Intent i = new Intent(getApplicationContext(),
-                        RegisterActivity.class);
+                        UserRegisterActivity.class);
                 startActivity(i);
                 finish();
             }
         });
-
-        /*
-        //Google
-        GoogleSignInOptions gso = new GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                .requestEmail()
-                .build();
-
-        googleApiClient = new GoogleApiClient.Builder(this)
-                .enableAutoManage(this, this)
-                .addApi(Auth.GOOGLE_SIGN_IN_API, gso)
-                .build();
-
-        signInButton = (SignInButton) findViewById(R.id.signInButton);
-
-        signInButton.setSize(SignInButton.SIZE_WIDE);
-
-        signInButton.setColorScheme(SignInButton.COLOR_DARK);
-
-        signInButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = Auth.GoogleSignInApi.getSignInIntent(googleApiClient);
-                startActivityForResult(intent, SIGN_IN_CODE);
-            }
-        });
-        */
 
     }
 
@@ -149,89 +117,74 @@ public class LoginActivity extends AppCompatActivity {
      * function to verify login details in mysql db
      * */
     private void checkLogin(final String email, final String password) {
-        // Tag used to cancel the request
-        String tag_string_req = "req_login";
 
-        pDialog.setMessage("Ingresando ...");
-        showDialog();
+        final ApiService service = ApiServiceGenerator.createService(ApiService.class);
 
-        StringRequest strReq = new StringRequest(Method.POST,
-                AppConfig.URL_LOGIN, new Response.Listener<String>() {
+        Call<List<Usuario>> call = service.getUsuarios();
 
+        call.enqueue(new Callback<List<Usuario>>() {
             @Override
-            public void onResponse(String response) {
-                Log.d(TAG, "Login Response: " + response.toString());
-                hideDialog();
-
+            public void onResponse(Call<List<Usuario>> call, Response<List<Usuario>> response) {
                 try {
-                    JSONObject jObj = new JSONObject(response);
-                    boolean error = jObj.getBoolean("error");
 
-                    // Check for error node in json
-                    if (!error) {
-                        // user successfully logged in
-                        // Create login session
-                        session.setLogin(true);
+                    int statusCode = response.code();
+                    Log.d(TAG, "HTTP status code: " + statusCode);
 
-                        // Now store the user in SQLite
-                        String uid = jObj.getString("uid");
+                    if (response.isSuccessful()) {
 
-                        JSONObject user = jObj.getJSONObject("user");
-                        String name = user.getString("name");
-                        String dni = user.getString("dni");
-                        String email = user.getString("email");
-                        String created_at = user
-                                .getString("created_at");
+                        List<Usuario> usuarios = response.body();
+                        Log.d(TAG, "usuarios: " + usuarios);
+                        hideDialog();
 
-                        // Inserting row in users table
-                        db.addUser(name, dni, email, uid, created_at);
+                        for (Usuario usuario : usuarios) {
 
-                        // Launch main activity
-                        Intent intent = new Intent(LoginActivity.this,
-                                MainActivity.class);
-                        startActivity(intent);
-                        finish();
+                            if (usuario.getEmail().equalsIgnoreCase(email) && usuario.getPassword().equalsIgnoreCase(convertMd5(password))) {
+
+                                int id = usuario.getId();
+                                String name = usuario.getNombre();
+
+                                Toast.makeText(getApplication(), "Bienvenido "+ name, Toast.LENGTH_SHORT).show();
+
+                                // Save to SharedPreferences
+                                SharedPreferences.Editor editor = sharedPreferences.edit();
+                                boolean success = editor
+                                        .putString("id", String.valueOf(id))
+                                        .putBoolean("islogged", true)
+                                        .commit();
+
+                                // Go to Dashboard
+                                goDashboard();
+
+                            } else {
+                                Toast.makeText(LoginActivity.this, "Datos incorrectos.", Toast.LENGTH_SHORT).show();
+
+                            }
+                        }
+
                     } else {
-                        // Error in login. Get the error message
-                        String errorMsg = jObj.getString("error_msg");
-                        Toast.makeText(getApplicationContext(),
-                                errorMsg, Toast.LENGTH_LONG).show();
+                        Log.e(TAG, "onError: " + response.errorBody().string());
+                        throw new Exception("Error en el servicio");
                     }
-                } catch (JSONException e) {
-                    // JSON error
-                    e.printStackTrace();
-                    Toast.makeText(getApplicationContext(), "Json error: " + e.getMessage(), Toast.LENGTH_LONG).show();
+
+                } catch (Throwable t) {
+                    try {
+                        Log.e(TAG, "onThrowable: " + t.toString(), t);
+                        hideDialog();
+                        Toast.makeText(LoginActivity.this, t.getMessage(), Toast.LENGTH_LONG).show();
+                    }catch (Throwable x){}
                 }
-
             }
-        }, new Response.ErrorListener() {
 
             @Override
-            public void onErrorResponse(VolleyError error) {
-                Log.e(TAG, "Login Error: " + error.getMessage());
-                Toast.makeText(getApplicationContext(),
-                        error.getMessage(), Toast.LENGTH_LONG).show();
+            public void onFailure(Call<List<Usuario>> call, Throwable t) {
+                Log.e(TAG, "onFailure: " + t.toString());
                 hideDialog();
-            }
-        }) {
-
-            @Override
-            protected Map<String, String> getParams() {
-                // Posting parameters to login url
-                Map<String, String> params = new HashMap<String, String>();
-                params.put("email", email);
-                params.put("password", password);
-
-                return params;
+                Toast.makeText(LoginActivity.this, t.getMessage(), Toast.LENGTH_LONG).show();
             }
 
-        };
+        });
 
-        // Adding request to request queue
-        AppController.getInstance().addToRequestQueue(strReq, tag_string_req);
     }
-
-
 
     private void showDialog() {
         if (!pDialog.isShowing())
@@ -243,35 +196,27 @@ public class LoginActivity extends AppCompatActivity {
             pDialog.dismiss();
     }
 
-    /*
-    @Override
-    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if (requestCode == SIGN_IN_CODE) {
-            GoogleSignInResult result = Auth.GoogleSignInApi.getSignInResultFromIntent(data);
-            handleSignInResult(result);
+    public static String convertMd5(String pass) {
+        String password = null;
+        MessageDigest mdEnc;
+        try {
+            mdEnc = MessageDigest.getInstance("MD5");
+            mdEnc.update(pass.getBytes(), 0, pass.length());
+            pass = new BigInteger(1, mdEnc.digest()).toString(16);
+            while (pass.length() < 32) {
+                pass = "0" + pass;
+            }
+            password = pass;
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
         }
+        return password;
     }
 
-    private void handleSignInResult(GoogleSignInResult result) {
-        if (result.isSuccess()) {
-            goMainScreen();
-        }
-    }
-
-    private void goMainScreen() {
-        session.setLogin(true);
-        // Launch main activity
+    private  void goDashboard(){
         Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
         startActivity(intent);
         finish();
     }
-    */
+
 }

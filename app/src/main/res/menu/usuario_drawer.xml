@@ -2,25 +2,27 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
     <group android:checkableBehavior="single">
+
         <item
-            android:id="@+id/nav_camera"
-            android:icon="@drawable/ic_menu_camera"
-            android:title="Import" />
+            android:id="@+id/navigation_store"
+            android:icon="@drawable/ic_store"
+            android:title="@string/nav_tienda" />
         <item
-            android:id="@+id/nav_gallery"
-            android:icon="@drawable/ic_menu_gallery"
-            android:title="Gallery" />
+            android:id="@+id/navigation_productos"
+            android:icon="@drawable/ic_t_shirt"
+            android:title="@string/nav_productos" />
         <item
-            android:id="@+id/nav_slideshow"
-            android:icon="@drawable/ic_menu_slideshow"
-            android:title="Slideshow" />
+            android:id="@+id/navigation_map"
+            android:icon="@drawable/ic_map"
+            android:title="@string/nav_mapa" />
         <item
-            android:id="@+id/nav_manage"
-            android:icon="@drawable/ic_menu_manage"
-            android:title="Tools" />
+            android:id="@+id/navigation_explorar"
+            android:icon="@drawable/ic_search"
+            android:title="@string/nav_explorar" />
+
     </group>
 
-    <item android:title="Communicate">
+    <item android:title="Usuario">
         <menu>
             <item
                 android:id="@+id/nav_perfil"
